@@ -1,0 +1,7 @@
+# Global experiment settings
+experiment:
+
+
+# Algorithms to evaluate with their hyperparameter grids
+algorithms:
+  
