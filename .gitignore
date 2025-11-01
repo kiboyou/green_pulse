@@ -5,11 +5,13 @@ __pycache__/
 *.pyc
 
 # Données brutes et intermédiaires
-/data/
-*.csv
-*.parquet
-data/raw/*
-!data/raw/*.dvc
+ /data/
+ *.csv
+ *.parquet
+ data/raw/*
+ !data/raw/*.dvc
+ # Allow DVC metafiles (.dvc) anywhere under data/ so they can be tracked by git
+ !data/**/*.dvc
 models/*.pkl
 models/*.joblib
 .DS_Store
