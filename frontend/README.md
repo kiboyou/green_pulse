@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — Green Pulse
 
-## Getting Started
+Interface utilisateur Next.js pour le projet Green Pulse. Le frontend consomme l'API d'inférence (FastAPI) et affiche les prévisions, visualisations temporelles et tableaux de bord.
 
-First, run the development server:
+## Technologies
+
+- Framework : Next.js
+- Langage : TypeScript
+- Styles : CSS Modules / Tailwind (selon les composants)
+- Gestion des dépendances : npm / pnpm
+
+## Structure (extrait)
+
+```
+frontend/
+├── public/
+├── src/
+│   ├── app/
+│   ├── components/
+│   └── types/
+├── next.config.ts
+├── package.json
+└── tsconfig.json
+```
+
+## Variables d'environnement
+
+Le frontend attend au minimum :
+
+- `NEXT_PUBLIC_API_URL` : URL publique (ou locale) de l'API (ex: `http://localhost:8000`)
+
+Créez un fichier `.env.local` pour le développement :
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Installation & développement
+
+1. Se positionner dans le dossier `frontend/` :
+
+```bash
+cd frontend
+```
+
+2. Installer les dépendances :
+
+```bash
+npm install
+```
+
+3. Lancer le serveur de développement :
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# puis ouvrir http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build & Production
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Générer la build :
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+Docker (optionnel) : construire l'image et lancer :
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker build -t greenpulse-frontend .
+docker run -e NEXT_PUBLIC_API_URL="https://api.example.com" -p 3000:3000 greenpulse-frontend
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tests & qualité
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Ajouter des tests unitaires pour les composants React
+- Lancer les linters/formatters présents dans `package.json` (si configurés)
 
-## Deploy on Vercel
+## Déploiement
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Le frontend peut être déployé sur Vercel, Netlify ou via une image Docker. Veillez à configurer `NEXT_PUBLIC_API_URL` selon l'environnement (dev/staging/prod).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contribution
+
+1. Créez une branche feature
+2. Ajoutez les tests correspondants
+3. Ouvrez une Pull Request
+
+---
+Voir le README principal pour la vision MLOps et le planning (racine du dépôt).
