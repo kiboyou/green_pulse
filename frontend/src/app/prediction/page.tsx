@@ -24,7 +24,8 @@ export default function PredictionPage() {
 	const [dragging, setDragging] = useState(false);
 	const [result, setResult] = useState<PredictResponse | null>(null);
 
-	const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+	// The backend FastAPI root (no trailing /api now since endpoints are defined at root)
+	const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 	// Stable example template for forecasting results (includes all fields used by the UI)
 	const example = {

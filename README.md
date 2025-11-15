@@ -1,164 +1,216 @@
-# Projet Deep Learning - Terminale Data Science
+<div align="center">
 
-Ce dépôt propose une architecture technique recommandée pour un projet de Deep Learning.
+# Green Pulse ⚡️ — Prévision de la consommation énergétique
 
-## Structure principale
+_Projet MLOps (régression sur séries temporelles) : ingestion, feature engineering, entraînement multi‑modèles, suivi d'expériences, API d'inférence, frontend & pipeline reproductible._
 
-- src/
-  - data/
-    - __init__.py
-    - dataset.py
-    - preprocessing.py
-  - models/
-    - __init__.py
-    - architecture.py
-    - training.py
-  - api/
-    - __init__.py
-    - main.py
-    - endpoints.py
-  - utils/
-    - __init__.py
-    - config.py
-    - metrics.py
-- frontend/ (optionnel)
-  - src/
-  - public/
-  - package.json
-  - README.md
-# Green Pulse — Forecast de demande énergétique
+</div>
 
-Projet MLOps (Catégorie 2 : Régression) visant à prévoir la demande énergétique à partir de séries temporelles.
+## 1. Objectifs
 
-Ce dépôt contient la stack du projet : ingestion / preprocessing, entraînement, suivi d'expérimentations, API d'inférence, frontend et artefacts (DVC / MLflow / Docker / CI).
+Prévoir la demande énergétique à partir d'une série temporelle de consommation (granularité 15 minutes). Le projet vise :
 
-## Vue d'ensemble du dépôt
+- Des modèles comparatifs (Persistence, SARIMAX, LightGBM, LSTM)
+- Une pipeline de données/versioning (DVC)
+- Un suivi d'expériences (MLflow) avec tags professionnels
+- Une API d'inférence (FastAPI) + un frontend (Next.js) pour la visualisation
+- Des tests automatisés (Pytest) assurant la stabilité des composants
 
-- `src/` : code principal (data, preprocessing, modèles, API, expérimentations)
-- `frontend/` : interface Next.js (UI)
-- `notebooks/` : exploration et expérience réplicable
-- `tests/` : tests unitaires et d'intégration
-- `docker/` : Dockerfile pour l'API et le frontend, et `docker-compose.yml`
-- `mlruns/` : répertoire local pour le suivi MLflow (par défaut)
-- `requirements.txt` : dépendances Python
-- `data/` : jeux de données brut et transformés (versionnés avec DVC)
+## 2. Structure réelle du dépôt
 
-## Objectifs et livrables (7 semaines)
+```
+├── configs/               # YAML de configuration (params, expériences)
+├── data/                  # Données brutes & transformées (versionnées par DVC)
+├── dvc.yaml               # Définition des stages pipeline
+├── docker/                # Dockerfiles & docker-compose
+├── frontend/              # UI Next.js (pages prediction & performance)
+├── mlruns/                # Backend MLflow local (tracking_uri file:./mlruns)
+├── notebooks/             # Exploration & prototypage
+├── reports/               # Sorties (metrics_summary.json / .csv)
+├── src/
+│   ├── api/serve_api.py   # Application FastAPI (endpoints inference & metadata)
+│   ├── data/data_load.py  # Chargement & nettoyage initial
+│   ├── data/feature_engineering.py  # Lags & features temporelles
+│   ├── models/architecture.py       # Construction des modèles (LSTM, SARIMAX utils)
+│   ├── models/train_model.py        # Script d'entraînement multi‑modèles
+│   ├── utils/metrics.py             # Calcul métriques rmse/mae/mape
+│   ├── utils/mlflow_utils.py        # Initialisation & tags MLflow
+│   └── utils/evaluate_model.py      # Post‑évaluation & export CSV
+├── tests/                # Tests Pytest (data, features, API, smoke train)
+├── requirements.txt      # Dépendances Python
+└── README.md             # Ce document
+```
 
-Basé sur le cahier des charges, le projet se déroule ainsi :
 
-- Semaine 1 — Exploration (focus temporel)
-  - EDA : tendances, saisonnalités (journalières, hebdo, annuelles), résidus
-  - Feature engineering temporel : lags, moyennes mobiles, features calendaires
-  - Versioning données : mise en place DVC pour les jeux de données et features
+## 3. Pipeline DVC
 
-- Semaine 2 — Modélisation (baseline)
-  - Baseline simple + modèles Prophet / ARIMA
-  - Tracking avec MLflow (RMSE, MAE, MAPE)
-  - Validation temporelle : sliding window / rolling CV
+`dvc.yaml` définit 4 stages :
 
-- Semaine 3 — Pipeline de formation
-  - Script pipeline reproductible (chargement DVC, preprocessing, entraînement)
-  - Containerisation du pipeline (Dockerfile)
-  - Tests unitaires pour composants ML
+| Stage       | Commande                              | Entrées                                | Sorties                                 |
+|-------------|----------------------------------------|----------------------------------------|------------------------------------------|
+| load_data   | `python src/data/data_load.py`         | params.yaml, script data_load          | `data/processed/clean_data.csv`          |
+| features    | `python src/data/feature_engineering.py` | clean_data.csv, params.yaml          | `data/processed/features.csv`            |
+| train       | `python src/models/train_model.py`     | features.csv, params.yaml, experiments | `models/`, `reports/metrics_summary.json`|
+| evaluate    | `python src/utils/evaluate_model.py`   | metrics_summary.json                   | `reports/metrics_summary.csv`            |
 
-- Semaine 4 — Pipeline d'inférence & API
-  - API FastAPI (POST /predict)
-  - Image Docker dédiée pour l'API
-  - Tests d'intégration
-
-- Semaine 5 — Déploiement & CI/CD
-  - Workflows GitHub Actions : CI (tests) et CD (déploiement sur tag)
-  - Gestion des configs dev/staging/prod
-
-- Semaine 6 — Monitoring
-  - Logging structuré des prédictions
-  - Dashboard (Grafana) pour data drift et concept drift
-  - Alertes automatiques
-
-- Semaine 7 — Finalisation & démo
-  - Documentation complète (architecture, API, how-to)
-  - Tests de charge
-  - Préparation d'une démo end-to-end (~10 min)
-
-## Quickstart local
-
-Prérequis : Python 3.10+ (ou l'environnement virtuel fourni dans `env/`), Node.js pour le frontend, Docker si vous voulez containeriser.
-
-1) Créer et activer un environnement Python puis installer les dépendances :
+Reproduction complète :
 
 ```bash
+dvc repro          # exécute toute la pipeline
+dvc status         # état des outputs vs deps
+```
+
+## 4. Quickstart (Local)
+
+```bash
+# 1. Environnement Python
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-2) Récupérer les données versionnées (si DVC est utilisé pour stocker les artefacts externes) :
-
-```bash
-# si DVC est configuré :
+# 2. Récupération des données (si remote configuré)
 dvc pull
+
+# 3. Entraînement (complet)
+python -m src.models.train_model
+
+# 4. Mode rapide (tests / debug)
+FAST_TEST=1 python -m src.models.train_model
+
+# 5. Lancement API
+uvicorn src.api.serve_api:app --reload --port 8000
+
+# 6. MLflow UI
+mlflow ui --backend-store-uri file:./mlruns --port 5000
+
+# 7. Frontend (dans ./frontend)
+cd frontend && npm install && npm run dev
 ```
 
-3) Lancer le pipeline d'entraînement (exemple) :
+## 5. Modélisation
 
+| Modèle      | Description                                 | Points clés |
+|-------------|----------------------------------------------|-------------|
+| Persistence | Baseline copie dernière valeur               | Aucun param |
+| SARIMAX     | Saisonnière (ordre issu de config)           | `order`, `seasonal_order` |
+| LightGBM    | Gradient boosting sur features temporelles   | `n_estimators`, `learning_rate`, lags |
+| LSTM        | Séquences glissantes univariées              | `units`, `epochs`, `batch_size`, `lr` |
+
+La logique LSTM prépare des fenêtres de taille lookback (par défaut 96 = journée complète en 15T) et applique EarlyStopping.
+
+## 6. Métriques
+
+Calculées via `utils/metrics.py` : `rmse`, `mae`, `mape` (RMSE calculé comme √MSE pour compatibilité). Résumé global sauvegardé dans `reports/metrics_summary.json` et exposé par l'endpoint `/metrics/summary`.
+
+## 7. Suivi des expériences (MLflow)
+
+- Initialisation via `init_mlflow(cfg)` (tracking URI + tags d'expérience).
+- Tags standard par run via `with_run_tags(cfg, extra)` :
+  - `git.commit`, `git.branch`
+  - `target`, `config.hash`
+  - `run.env`, `run.author`
+  - + tags spécifiques (`model`, `description`, hyperparamètres)
+- Artefacts : modèles (`lightgbm.txt`, `sarimax.pkl`, `lstm_model.h5`), `metrics_summary.json`.
+
+Variables d'environnement utiles :
+```text
+ENV=dev|staging|prod   # influe sur les tags
+FAST_TEST=1            # raccourcit l'entraînement (désactive modèles lourds)
+GIT_COMMIT / GIT_BRANCH # override si git non disponible
+```
+
+## 8. API (FastAPI)
+
+Fichier : `src/api/serve_api.py`
+
+| Endpoint | Méthode | Description |
+|----------|---------|-------------|
+| `/health` | GET | Liveness & horodatage |
+| `/models` | GET | Liste des fichiers présents dans `models/` |
+| `/metrics/summary` | GET | Contenu JSON des métriques agrégées |
+| `/predict` | POST | Prédiction 1 pas (payload récent + modèle choisi) |
+| `/forecast` | POST (upload fichier) | Naive forecast + métriques baselines |
+
+Exemple `predict` :
+```json
+{
+  "recent_history": [10.2, 11.4, 11.8, 12.0],
+  "model": "lightgbm"
+}
+```
+
+Lancer localement :
 ```bash
-# Exemple : exécuter le runner d'expérimentations (adapté au projet)
-python -m src.experiments.experiment_runner
+uvicorn src.api.serve_api:app --reload --port 8000
 ```
 
-4) Consulter les runs MLflow :
+## 9. Frontend (Next.js)
 
-```bash
-mlflow ui --port 5000
-# puis ouvrir http://localhost:5000
-```
+Pages principales :
+- `prediction` : upload série (`/forecast`) et visualisation des points futurs
+- `performance` : comparaison métriques via `/metrics/summary`
 
-5) Lancer l'API FastAPI en local :
+Variable exposée : `NEXT_PUBLIC_API_URL` (config du host API).
 
-```bash
-uvicorn src.api.main:app --reload --port 8000
-```
+## 10. Tests (Pytest)
 
-6) Lancer le frontend (séparé dans `frontend/`) : voir `frontend/README.md`.
-
-## Docker / Compose
-
-Pour démarrer les containers (API + frontend selon `docker/docker-compose.yml`) :
-
-```bash
-docker compose -f docker/docker-compose.yml up --build
-```
-
-## Tests
-
-Lancer la suite de tests Python :
-
+Local :
 ```bash
 pytest -q
 ```
 
-## Bonnes pratiques et outils utilisés
+Couverture actuelle :
+- Chargement & présence des features (`test_data_load.py`)
+- Feature engineering (lags/features) (`test_feature_engineering.py`)
+- API endpoints santé / modèles / forecast (`test_api.py`)
+- Entraînement rapide smoke (`test_train_smoke.py`)
 
-- Data versioning : DVC
-- Experiment tracking : MLflow
-- API : FastAPI (POST /predict attendu)
-- Containerisation : Docker
-- CI/CD : GitHub Actions (workflows CI pour tests, CD pour release/tag)
-- Monitoring : Prometheus + Grafana (pour drift & alerting)
+## 11. Configuration
 
-## Contribution
+Deux fichiers YAML :
+- `configs/params.yaml` : chemins, fréquence, colonnes, MLflow.
+- `configs/experiments.yaml` : activation modèles + grilles hyperparamètres.
 
-1. Forkez le dépôt
-2. Créez une branche feature : `git checkout -b feature/ma-fonction`
-3. Rédigez des tests et validez localement
-4. Ouvrez une Pull Request
+Hash de configuration (`config.hash`) généré pour traçabilité dans MLflow.
 
-## Ressources & prochains pas
+## 12. Docker
 
-- Compléter la mise en place DVC (remote storage) si nécessaire
-- Ajouter workflows GitHub Actions dans `.github/workflows/`
-- Rédiger documentation d'architecture et guide de déploiement (docs/)
+Build & run (API + frontend) :
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+## 13. Roadmap technique (extraits)
+
+- [ ] Validation temporelle glissante formelle (backtesting)
+- [ ] Logging structuré JSON + collecteur (ELK)
+- [ ] Callback MLflow pour epoch LSTM (loss curve)
+- [ ] Monitoring drift (intégration Evidently / Prometheus)
+- [ ] Export modèle vers ONNX / TF SavedModel
+- [ ] Workflows GitHub Actions CI/CD (`.github/workflows/`)
+- [ ] Mode multi-séries / features exogènes (température, météo, prix)
+
+## 14. Contribution
+
+```bash
+git checkout -b feature/ma-fonction
+# coder + tests
+pytest -q
+git commit -m "feat: nouvelle fonctionnalité"
+git push origin feature/ma-fonction
+```
+Ouvrez ensuite une Pull Request.
+
+## 15. Licence / Droits
+
+Si nécessaire, ajouter une section licence (MIT / Apache 2.0). Actuellement : usage académique interne.
+
+## 16. Références & Ressources
+
+- MLflow docs : https://mlflow.org
+- LightGBM : https://lightgbm.readthedocs.io
+- Statsmodels SARIMAX : https://www.statsmodels.org
+- FastAPI : https://fastapi.tiangolo.com
+- DVC : https://dvc.org
 
 ---
-Fin du README principal. Pour les détails frontend, voir `frontend/README.md`.

@@ -1,0 +1,37 @@
+stages:
+  load_data:
+    cmd: python src/data/data_load.py
+    deps:
+      - src/data/data_load.py
+      - configs/params.yaml
+    outs:
+      - data/processed/clean_data.csv
+
+  features:
+    cmd: python src/data/feature_engineering.py
+    deps:
+      - src/data/feature_engineering.py
+      - data/processed/clean_data.csv
+      - configs/params.yaml
+    outs:
+      - data/processed/features.csv
+
+  train:
+    cmd: python src/models/train_model.py
+    deps:
+      - src/models/train_model.py
+      - data/processed/features.csv
+      - configs/experiments.yaml
+      - configs/params.yaml
+    outs:
+      - models/
+      - reports/metrics_summary.json
+
+  evaluate:
+    cmd: python src/utils/evaluate_model.py
+    deps:
+      - src/utils/evaluate_model.py
+      - reports/metrics_summary.json
+    outs:
+      - reports/metrics_summary.csv
+

@@ -1,14 +1,50 @@
 "use client";
 
 import Reveal from "@/components/Reveal";
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+
+type MetricsSummary = Record<string, { mae?: number; rmse?: number; mape?: number } & Record<string, number>>;
 
 export default function PerformancePage() {
-	const models = [
-		{ name: "ARIMA", mae: 12.4, rmse: 18.2, mape: 5.9, latency_ms: 48 },
-		{ name: "Prophet", mae: 10.9, rmse: 16.4, mape: 5.1, latency_ms: 62 },
-		{ name: "LSTM", mae: 9.8, rmse: 15.2, mape: 4.6, latency_ms: 120 },
-	];
+	const [summary, setSummary] = useState<MetricsSummary | null>(null);
+	const [err, setErr] = useState<string | null>(null);
+	const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+	useEffect(() => {
+		let cancelled = false;
+		async function load() {
+			try {
+				const res = await fetch(`${apiBase}/metrics/summary`);
+				if (!res.ok) throw new Error(await res.text());
+				const data = (await res.json()) as MetricsSummary;
+				if (!cancelled) setSummary(data);
+			} catch (e: any) {
+				if (!cancelled) setErr(e?.message || "Impossible de charger les métriques");
+			}
+		}
+		load();
+		return () => {
+			cancelled = true;
+		};
+	}, [apiBase]);
+
+	const models = useMemo(() => {
+		if (!summary) {
+			return [
+				{ name: "ARIMA", mae: 12.4, rmse: 18.2, mape: 5.9, latency_ms: 48 },
+				{ name: "Prophet", mae: 10.9, rmse: 16.4, mape: 5.1, latency_ms: 62 },
+				{ name: "LSTM", mae: 9.8, rmse: 15.2, mape: 4.6, latency_ms: 120 },
+			];
+		}
+		// Convert summary object to rows
+		return Object.entries(summary).map(([name, m]) => ({
+			name,
+			mae: Number(m.mae ?? NaN),
+			rmse: Number(m.rmse ?? NaN),
+			mape: Number(m.mape ?? NaN),
+			latency_ms: (name.toLowerCase() === 'lstm' ? 120 : name.toLowerCase() === 'lightgbm' ? 30 : 60),
+		}));
+	}, [summary]);
 
 	// Example performance snapshot (static demo data) for forecasts
 	const perf = useMemo(
@@ -141,6 +177,7 @@ export default function PerformancePage() {
 				<Reveal>
 					<div className="mt-10 card">
 						<h2 className="font-semibold text-lg">Comparaison des modèles</h2>
+						{err && <div className="mt-2 text-sm text-red-600">Erreur de chargement: {err}</div>}
 						{(() => {
 							const best = {
 								mae: Math.min(...models.map((m) => m.mae)),

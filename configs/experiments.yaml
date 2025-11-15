@@ -1,7 +1,31 @@
-# Global experiment settings
-experiment:
+# experiments.yml
+models:
+  persistence:
+    description: "baseline: last value persistence"
+    enabled: true
 
+  sarimax:
+    enabled: true
+    order: [1,0,1]
+    seasonal_order: [1,0,1,96]  # daily seasonality if 15T -> 96
+    enforce_stationarity: false
+    enforce_invertibility: false
 
-# Algorithms to evaluate with their hyperparameter grids
-algorithms:
-  
+  lightgbm:
+    enabled: true
+    params:
+      n_estimators: [100, 300]
+      learning_rate: [0.05, 0.1]
+      max_depth: [6, 10]
+      num_leaves: [31]
+
+  lstm:
+    enabled: true
+    params:
+      epochs: [60]
+      batch_size: [64]
+      units: [64]
+      lr: [0.001]
+
+evaluation:
+  metrics: ["rmse", "mae", "mape"]

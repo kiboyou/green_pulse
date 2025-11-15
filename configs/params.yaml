@@ -1,5 +1,41 @@
-data_generation:
+# params.yml
+seed: 42
 
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  features_file: "data/processed/features.csv"
+  clean_file: "data/processed/clean_data.csv"
+  models_dir: "models"
+  artifacts_dir: "artifacts"
+  reports_dir: "reports"
 
+data:
+  datetime_cols:
+    date_col: "TxnDate"
+    time_col: "TxnTime"
+  consumption_col: "Consumption"
+  dayfirst: true
+  resample_freq: "15T"        # resample to 15 minutes
+  threshold_on: 0.5           # value >= threshold => machine ON
+  fillna_method: "zero"       # or "ffill"
 
-model_training:
+training:
+  forecast_horizon: "30D"     # predict next 30 days (month) (string parseable by pandas)
+  horizon_in_periods: 96*30   # if freq=15T -> 96 per day -> 96*30 periods (overwrite if needed)
+  test_size_days: 30
+  val_size_days: 7
+  scale_method: "standard"    # "standard" or "minmax" or "none"
+  target_col: "consumption"
+
+mlflow:
+  tracking_uri: "file:./mlruns"
+  experiment_name: "green_pulse_experiments"
+
+dvc:
+  enabled: true
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
